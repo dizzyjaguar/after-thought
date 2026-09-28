@@ -1,0 +1,6 @@
+node_modules/
+web/dist/
+build/
+mac/.build/
+mac/.swiftpm/
+.DS_Store
