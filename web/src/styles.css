@@ -174,9 +174,9 @@ kbd {
    (overflow: auto), so it must stay unpositioned and filter-free, otherwise it
    becomes the tooltips' containing block and clips them. The ::before resolves
    against the toolbar's floating wrapper instead, which is the same size. */
-.bn-container .bn-suggestion-menu,
-.mantine-Menu-dropdown,
-.mantine-Popover-dropdown {
+/* Mantine dropdowns are already position: absolute (set by class, with only
+   top/left inline) — overriding that drops submenus into the page flow. */
+.bn-container .bn-suggestion-menu {
   position: relative;
 }
 
