@@ -47,7 +47,11 @@ body,
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 22px 10px;
+  /* Fixed height: the native drag strip (Panel.headerHeight) sits on top of it. */
+  box-sizing: border-box;
+  height: 40px;
+  flex-shrink: 0;
+  padding: 4px 22px 0;
   border-bottom: 0.5px solid var(--line);
   font-size: 12px;
   user-select: none;

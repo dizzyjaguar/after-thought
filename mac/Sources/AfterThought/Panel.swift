@@ -21,8 +21,33 @@ final class Panel: NSPanel {
         isReleasedWhenClosed = false
         acceptsMouseMovedEvents = true
         minSize = NSSize(width: 420, height: 280)
-        contentView = Self.glass(around: content)
+        contentView = Self.glass(around: Self.withDragStrip(content))
         setFrameAutosaveName("AfterThoughtPanel")
+    }
+
+    /// Height of the web header bar (`.bar` in styles.css). Keep them in sync.
+    static let headerHeight: CGFloat = 40
+
+    /// Lays an invisible strip over the web header so it drags the window;
+    /// the web view would otherwise swallow the clicks.
+    private static func withDragStrip(_ content: NSView) -> NSView {
+        let container = NSView()
+        let strip = DragStrip()
+        for view in [content, strip] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            container.addSubview(view)
+        }
+        NSLayoutConstraint.activate([
+            content.topAnchor.constraint(equalTo: container.topAnchor),
+            content.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            content.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            strip.topAnchor.constraint(equalTo: container.topAnchor),
+            strip.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            strip.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            strip.heightAnchor.constraint(equalToConstant: headerHeight),
+        ])
+        return container
     }
 
     private static func glass(around content: NSView) -> NSView {
@@ -77,15 +102,28 @@ final class Panel: NSPanel {
         return super.performKeyEquivalent(with: event)
     }
 
-    /// Show on the screen the mouse is on. Keeps the saved size.
+    /// Shows the panel where you last left it. Centers it on the mouse's screen
+    /// the first time, or when that screen doesn't contain the saved spot.
     func present() {
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
-        if let visible = screen?.visibleFrame, !visible.intersects(frame) || !isVisible {
+        let hasSavedFrame = UserDefaults.standard.string(forKey: "NSWindow Frame AfterThoughtPanel") != nil
+        if let visible = screen?.visibleFrame, !hasSavedFrame || !visible.intersects(frame) {
             let size = frame.size
             setFrameOrigin(NSPoint(x: visible.midX - size.width / 2,
                                    y: visible.midY - size.height / 2 + visible.height * 0.08))
+            saveFrame(usingName: "AfterThoughtPanel")
         }
         makeKeyAndOrderFront(nil)
+    }
+}
+
+/// Transparent view that moves its window when dragged.
+private final class DragStrip: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.performDrag(with: event)
     }
 }
