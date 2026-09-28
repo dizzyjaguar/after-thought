@@ -12,7 +12,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         editor = EditorWebView(store: store)
         panel = Panel(content: editor.webView)
-        panel.onResignKey = { [weak self] in self?.hide() }
         editor.onHide = { [weak self] in self?.hide() }
         panel.onToggleSidebar = { [weak self] in self?.editor.command("toggleSidebar") }
 
@@ -32,8 +31,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         editor.command(command)
     }
 
+    /// The panel stays open when you click away; only esc or this hotkey closes it.
     private func toggleLast() {
-        if panel.isVisible && panel.isKeyWindow { hide() } else { show("last") }
+        if panel.isVisible { hide() } else { show("last") }
     }
 
     private func hide() {

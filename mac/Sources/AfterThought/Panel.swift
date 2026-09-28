@@ -2,13 +2,14 @@ import AppKit
 
 /// Floating, borderless panel with a Liquid Glass background.
 final class Panel: NSPanel {
-    var onResignKey: (() -> Void)?
     var onToggleSidebar: (() -> Void)?
 
     init(content: NSView) {
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: 720, height: 520),
-            styleMask: [.borderless, .nonactivatingPanel, .resizable, .fullSizeContentView],
+            // Not .nonactivatingPanel: clicking back into the panel should activate the
+            // app, or WebKit drops hover state (tooltips) like it did before.
+            styleMask: [.borderless, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -78,11 +79,6 @@ final class Panel: NSPanel {
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
-
-    override func resignKey() {
-        super.resignKey()
-        onResignKey?()
-    }
 
     /// We have no Edit menu (menu bar app), so wire up the standard shortcuts here.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
