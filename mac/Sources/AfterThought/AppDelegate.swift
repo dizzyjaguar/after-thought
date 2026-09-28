@@ -15,8 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.onResignKey = { [weak self] in self?.hide() }
         editor.onHide = { [weak self] in self?.hide() }
 
-        // ⌃⌥Space: toggle, reopening the last note. ⌃⌥N: new note.
-        hotKeys.register(keyCode: kVK_Space, modifiers: controlKey | optionKey) { [weak self] in self?.toggleLast() }
+        // ⌘⇧Space: toggle, reopening the last note. ⌃⌥N: new note.
+        hotKeys.register(keyCode: kVK_Space, modifiers: cmdKey | shiftKey) { [weak self] in self?.toggleLast() }
         hotKeys.register(keyCode: kVK_ANSI_N, modifiers: controlKey | optionKey) { [weak self] in self?.show("new") }
 
         setUpStatusItem()
@@ -49,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.image = NSImage(systemSymbolName: "note.text", accessibilityDescription: "after-thought")
 
         let menu = NSMenu()
-        menu.addItem(item("Open Last Note", "⌃⌥Space", #selector(menuLast)))
+        menu.addItem(item("Open Last Note", "⌘⇧Space", #selector(menuLast)))
         menu.addItem(item("New Note", "⌃⌥N", #selector(menuNew)))
         menu.addItem(.separator())
         menu.addItem(item("Show Notes Folder", nil, #selector(openFolder)))

@@ -93,7 +93,7 @@ export function App() {
   // App-level shortcuts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key.toLowerCase() === "n") {
+      if (e.metaKey && ["n", "t"].includes(e.key.toLowerCase())) {
         e.preventDefault();
         setSwitcherOpen(false);
         newNote();
@@ -115,7 +115,7 @@ export function App() {
       <header className="bar">
         <span className="title">{note?.title || "Untitled"}</span>
         <span className="hints">
-          <kbd>/</kbd> blocks <kbd>⌘P</kbd> notes <kbd>⌘N</kbd> new <kbd>esc</kbd> hide
+          <kbd>/</kbd> blocks <kbd>⌘P</kbd> notes <kbd>⌘T</kbd> new <kbd>esc</kbd> hide
         </span>
       </header>
       {note && (

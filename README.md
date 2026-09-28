@@ -6,11 +6,11 @@ Quick notes for macOS. Notion-style blocks (via [BlockNote](https://www.blocknot
 
 | Keys | What |
 | --- | --- |
-| `⌃⌥Space` | Show / hide, opens your last note |
+| `⌘⇧Space` | Show / hide, opens your last note |
 | `⌃⌥N` | New note |
 | `/` | Block menu (headings, lists, checklists, code, …) |
 | `⌘P` | Search notes (`⌘⌫` deletes the selected one) |
-| `⌘N` | New note (inside the panel) |
+| `⌘N` / `⌘T` | New note (inside the panel) |
 | `esc` | Hide |
 
 ## Build
