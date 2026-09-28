@@ -46,7 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setUpStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem.button?.image = NSImage(systemSymbolName: "note.text", accessibilityDescription: "after-thought")
+        statusItem.button?.image = NSImage(systemSymbolName: "sparkle", accessibilityDescription: "After Thought")
+        statusItem.button?.toolTip = "After Thought"
 
         let menu = NSMenu()
         menu.addItem(item("Open Last Note", "⌘⇧Space", #selector(menuLast)))
