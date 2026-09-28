@@ -1,6 +1,6 @@
 import AppKit
 
-/// Floating, borderless, Raycast-style panel with a Liquid Glass background.
+/// Floating, borderless panel with a Liquid Glass background.
 final class Panel: NSPanel {
     var onResignKey: (() -> Void)?
     var onToggleSidebar: (() -> Void)?

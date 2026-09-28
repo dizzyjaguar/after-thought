@@ -1,6 +1,6 @@
 # after-thought
 
-Quick notes for macOS. Notion-style blocks (via [BlockNote](https://www.blocknotejs.org)) in a Raycast-style floating Liquid Glass panel.
+Quick notes for macOS. Notion-style blocks (via [BlockNote](https://www.blocknotejs.org)) in a floating Liquid Glass panel.
 
 ## Shortcuts
 

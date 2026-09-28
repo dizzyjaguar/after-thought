@@ -9,7 +9,7 @@ function ago(ts: number): string {
   return new Date(ts).toLocaleDateString();
 }
 
-// Raycast-style quick switcher: type to filter, ↑↓ to move, ↵ to open, ⌘⌫ to delete.
+// Quick switcher: type to filter, ↑↓ to move, ↵ to open, ⌘⌫ to delete.
 export function Switcher({
   currentId,
   folders,

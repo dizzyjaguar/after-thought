@@ -3,6 +3,6 @@ import AppKit
 let app = NSApplication.shared
 let delegate = AppDelegate()
 app.delegate = delegate
-// Menu bar app: no Dock icon, like Raycast.
+// Menu bar app: no Dock icon.
 app.setActivationPolicy(.accessory)
 app.run()
