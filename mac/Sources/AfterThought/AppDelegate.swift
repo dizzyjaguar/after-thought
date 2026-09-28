@@ -23,6 +23,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func show(_ command: String) {
+        // Actually activate: WebKit drops hover state (tooltips, hover menus) in
+        // windows of an inactive app, even when the panel is key.
+        NSApp.activate(ignoringOtherApps: true)
         panel.present()
         panel.makeFirstResponder(editor.webView)
         editor.command(command)
@@ -35,6 +38,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func hide() {
         guard panel.isVisible else { return }
         panel.orderOut(nil)
+        // Hand focus back to whatever app was in front before.
+        NSApp.hide(nil)
     }
 
     // MARK: Menu bar

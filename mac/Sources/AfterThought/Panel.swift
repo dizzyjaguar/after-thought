@@ -19,6 +19,7 @@ final class Panel: NSPanel {
         backgroundColor = .clear
         hasShadow = true
         isReleasedWhenClosed = false
+        acceptsMouseMovedEvents = true
         minSize = NSSize(width: 420, height: 280)
         contentView = Self.glass(around: content)
         setFrameAutosaveName("AfterThoughtPanel")
