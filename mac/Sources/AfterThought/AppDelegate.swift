@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel = Panel(content: editor.webView)
         panel.onResignKey = { [weak self] in self?.hide() }
         editor.onHide = { [weak self] in self?.hide() }
+        panel.onToggleSidebar = { [weak self] in self?.editor.command("toggleSidebar") }
 
         // ⌘⇧Space: toggle, reopening the last note. ⌃⌥N: new note.
         hotKeys.register(keyCode: kVK_Space, modifiers: cmdKey | shiftKey) { [weak self] in self?.toggleLast() }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { bridge, type NoteMeta } from "./bridge";
+import { bridge, type Folder, type NoteMeta } from "./bridge";
 
 function ago(ts: number): string {
   const s = Math.round((Date.now() - ts) / 1000);
@@ -12,11 +12,13 @@ function ago(ts: number): string {
 // Raycast-style quick switcher: type to filter, ↑↓ to move, ↵ to open, ⌘⌫ to delete.
 export function Switcher({
   currentId,
+  folders,
   onPick,
   onDeleted,
   onClose,
 }: {
   currentId?: string;
+  folders: Folder[];
   onPick: (id: string) => void;
   onDeleted: (id: string) => void;
   onClose: () => void;
@@ -85,6 +87,9 @@ export function Switcher({
             >
               <span>
                 {n.title || "Untitled"}
+                {n.folderId && (
+                  <em> · {folders.find((f) => f.id === n.folderId)?.name}</em>
+                )}
                 {n.id === currentId && <em> · open</em>}
               </span>
               <time>{ago(n.updatedAt)}</time>

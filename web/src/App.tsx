@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Block, PartialBlock } from "@blocknote/core";
 import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
-import { bridge, type Note } from "./bridge";
+import { bridge, type Folder, type Note, type NoteMeta } from "./bridge";
 import { Switcher } from "./Switcher";
+import { Sidebar, useSidebarOpen } from "./Sidebar";
 
 const newId = () => crypto.randomUUID();
 
@@ -32,8 +33,18 @@ export function App() {
   const [note, setNote] = useState<Note | null>(null);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [focusTick, setFocusTick] = useState(0);
+  const [notes, setNotes] = useState<NoteMeta[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useSidebarOpen();
+  const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
   // Tracks whether the open note is still blank, so we can drop it when leaving.
   const blankRef = useRef(true);
+
+  const refresh = useCallback(async () => {
+    const [n, f] = await Promise.all([bridge.list(), bridge.folders()]);
+    setNotes(n);
+    setFolders(f);
+  }, []);
 
   const leaveCurrent = useCallback(async () => {
     if (note && blankRef.current) await bridge.remove(note.id);
@@ -52,10 +63,14 @@ export function App() {
     [note, leaveCurrent],
   );
 
-  const newNote = useCallback(async () => {
-    if (note && blankRef.current) return setFocusTick((t) => t + 1);
+  const newNote = useCallback(async (folderId: string | null = null) => {
+    if (note && blankRef.current) {
+      // Reuse the blank note already open, just file it where asked.
+      setNote({ ...note, folderId });
+      return setFocusTick((t) => t + 1);
+    }
     await leaveCurrent();
-    const fresh: Note = { id: newId(), title: "", content: "", updatedAt: Date.now() };
+    const fresh: Note = { id: newId(), title: "", content: "", updatedAt: Date.now(), folderId };
     blankRef.current = true;
     setNote(fresh);
     bridge.setLastId(fresh.id);
@@ -77,15 +92,17 @@ export function App() {
   useEffect(() => {
     window.afterThought = {
       command: (name) => {
+        if (name === "toggleSidebar") return setSidebarOpen((o) => !o);
         setSwitcherOpen(false);
         if (name === "new") newNote();
         else openLast();
       },
     };
-  }, [newNote, openLast]);
+  }, [newNote, openLast, setSidebarOpen]);
 
   useEffect(() => {
     openLast();
+    refresh();
     // Only on first load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -100,6 +117,9 @@ export function App() {
       } else if (e.metaKey && e.key.toLowerCase() === "p") {
         e.preventDefault();
         setSwitcherOpen((o) => !o);
+      } else if (e.metaKey && (e.code === "Backslash" || e.key === "\\")) {
+        e.preventDefault();
+        setSidebarOpen((o) => !o);
       } else if (e.key === "Escape" && !e.defaultPrevented && !switcherOpen) {
         // Let BlockNote close its own menus first.
         if (document.querySelector(".bn-suggestion-menu")) return;
@@ -108,27 +128,105 @@ export function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [newNote, switcherOpen]);
+  }, [newNote, switcherOpen, setSidebarOpen]);
+
+  const deleteNote = async (id: string) => {
+    await bridge.remove(id);
+    setNotes((ns) => ns.filter((n) => n.id !== id));
+    if (id === note?.id) {
+      blankRef.current = false;
+      setNote(null);
+      newNote();
+    }
+  };
+
+  const moveNote = async (id: string, folderId: string | null) => {
+    await bridge.move(id, folderId);
+    setNotes((ns) => ns.map((n) => (n.id === id ? { ...n, folderId } : n)));
+    if (id === note?.id) setNote({ ...note, folderId });
+  };
+
+  const newFolder = async () => {
+    const folder = { id: newId(), name: "New folder" };
+    const next = [...folders, folder];
+    setFolders(next);
+    await bridge.saveFolders(next);
+    setRenamingFolder(folder.id);
+  };
+
+  const renameFolder = async (id: string, name: string) => {
+    const next = folders.map((f) => (f.id === id ? { ...f, name } : f));
+    setFolders(next);
+    await bridge.saveFolders(next);
+  };
+
+  const deleteFolder = async (id: string) => {
+    await bridge.deleteFolder(id);
+    if (note?.folderId === id) setNote({ ...note, folderId: null });
+    refresh();
+  };
 
   return (
     <div className="shell">
       <header className="bar">
-        <span className="title">{note?.title || "Untitled"}</span>
+        <button
+          className={`bar-toggle ${sidebarOpen ? "on" : ""}`}
+          title="Toggle sidebar (⌘\\)"
+          onClick={() => setSidebarOpen((o) => !o)}
+        >
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden>
+            <rect x="2" y="3" width="12" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M6.5 3v10" stroke="currentColor" strokeWidth="1.3" />
+          </svg>
+        </button>
+        <span className="title">
+          {note?.folderId && (
+            <span className="crumb">
+              {folders.find((f) => f.id === note.folderId)?.name} /{" "}
+            </span>
+          )}
+          {note?.title || "Untitled"}
+        </span>
         <span className="hints">
           <kbd>/</kbd> blocks <kbd>⌘P</kbd> notes <kbd>⌘T</kbd> new <kbd>esc</kbd> hide
         </span>
       </header>
-      {note && (
-        <Editor
-          key={note.id}
-          note={note}
-          focusTick={focusTick}
-          onChange={(title, empty) => {
-            blankRef.current = empty;
-            setNote((n) => (n ? { ...n, title } : n));
-          }}
-        />
-      )}
+      <div className="body">
+        {sidebarOpen && (
+          <Sidebar
+            notes={notes}
+            folders={folders}
+            currentId={note?.id}
+            renamingId={renamingFolder}
+            onOpen={openNote}
+            onNewNote={newNote}
+            onDeleteNote={deleteNote}
+            onMove={moveNote}
+            onNewFolder={newFolder}
+            onRenameFolder={renameFolder}
+            onDeleteFolder={deleteFolder}
+            onRenameDone={() => setRenamingFolder(null)}
+          />
+        )}
+        {note && (
+          <Editor
+            key={note.id}
+            note={note}
+            focusTick={focusTick}
+            onChange={(title, empty) => {
+              blankRef.current = empty;
+              setNote((n) => (n ? { ...n, title } : n));
+              if (empty) return;
+              // Keep the sidebar in step without re-reading every file.
+              setNotes((ns) => {
+                const meta = { id: note.id, title, updatedAt: Date.now(), folderId: note.folderId };
+                const rest = ns.filter((n) => n.id !== note.id);
+                return [meta, ...rest];
+              });
+            }}
+          />
+        )}
+      </div>
       {switcherOpen && (
         <Switcher
           currentId={note?.id}
@@ -136,7 +234,9 @@ export function App() {
             setSwitcherOpen(false);
             openNote(id);
           }}
+          folders={folders}
           onDeleted={(id) => {
+            setNotes((ns) => ns.filter((n) => n.id !== id));
             if (id === note?.id) {
               blankRef.current = false;
               setNote(null);
@@ -206,7 +306,7 @@ function Editor({
           window.clearTimeout(timer.current);
           const save = () => {
             pending.current = null;
-            if (!empty) bridge.save(note.id, title, JSON.stringify(blocks));
+            if (!empty) bridge.save(note.id, title, JSON.stringify(blocks), note.folderId);
           };
           pending.current = save;
           timer.current = window.setTimeout(save, 300);

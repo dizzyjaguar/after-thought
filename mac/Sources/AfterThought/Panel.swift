@@ -3,6 +3,7 @@ import AppKit
 /// Floating, borderless, Raycast-style panel with a Liquid Glass background.
 final class Panel: NSPanel {
     var onResignKey: (() -> Void)?
+    var onToggleSidebar: (() -> Void)?
 
     init(content: NSView) {
         super.init(
@@ -27,6 +28,8 @@ final class Panel: NSPanel {
 
     /// Height of the web header bar (`.bar` in styles.css). Keep them in sync.
     static let headerHeight: CGFloat = 40
+    /// Left part of the header left uncovered, for the web sidebar toggle (`.bar-toggle`).
+    static let toggleInset: CGFloat = 44
 
     /// Lays an invisible strip over the web header so it drags the window;
     /// the web view would otherwise swallow the clicks.
@@ -43,7 +46,7 @@ final class Panel: NSPanel {
             content.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             content.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             strip.topAnchor.constraint(equalTo: container.topAnchor),
-            strip.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            strip.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: toggleInset),
             strip.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             strip.heightAnchor.constraint(equalToConstant: headerHeight),
         ])
@@ -87,6 +90,13 @@ final class Panel: NSPanel {
               event.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.command),
               let key = event.charactersIgnoringModifiers?.lowercased() else {
             return super.performKeyEquivalent(with: event)
+        }
+        // ⌘\ toggles the sidebar. Matched by physical key (kVK_ANSI_Backslash)
+        // so it works on any keyboard layout.
+        if event.keyCode == 42,
+           event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command {
+            onToggleSidebar?()
+            return true
         }
         // ⌘Z / ⌘⇧Z are left alone on purpose: the editor has its own undo history
         // and needs the key event. Sending undo: would hit WebKit's history instead.

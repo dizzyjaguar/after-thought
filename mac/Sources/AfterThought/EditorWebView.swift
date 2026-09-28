@@ -22,7 +22,7 @@ final class EditorWebView: NSObject, WKScriptMessageHandlerWithReply, WKNavigati
         webView.setValue(false, forKey: "drawsBackground") // let the glass show through
         webView.autoresizingMask = [.width, .height]
         #if DEBUG
-        webView.isInspectable = true
+        if #available(macOS 13.3, *) { webView.isInspectable = true }
         #endif
 
         // `AFTER_THOUGHT_DEV_URL=http://localhost:5173` loads the Vite dev server instead.
@@ -58,7 +58,12 @@ final class EditorWebView: NSObject, WKScriptMessageHandlerWithReply, WKNavigati
         case "load": replyHandler(store.load(id) ?? NSNull(), nil)
         case "save":
             replyHandler(store.save(id: id, title: body["title"] as? String ?? "",
-                                    content: body["content"] as? String ?? ""), nil)
+                                    content: body["content"] as? String ?? "",
+                                    folderId: body["folderId"] as? String), nil)
+        case "move": replyHandler(store.move(id: id, folderId: body["folderId"] as? String), nil)
+        case "folders": replyHandler(store.folders(), nil)
+        case "saveFolders": replyHandler(store.saveFolders(body["folders"] as? [[String: Any]] ?? []), nil)
+        case "deleteFolder": replyHandler(store.deleteFolder(id), nil)
         case "delete": replyHandler(store.delete(id), nil)
         case "getLastId": replyHandler(store.lastId ?? NSNull(), nil)
         case "setLastId": store.lastId = id; replyHandler(true, nil)

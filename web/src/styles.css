@@ -8,6 +8,7 @@
   --kbd: rgba(255, 255, 255, 0.5);
   --kbd-edge: rgba(255, 255, 255, 0.8);
   --shine: rgba(255, 255, 255, 0.7);
+  --sidebar: rgba(255, 255, 255, 0.18);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,6 +21,7 @@
     --kbd: rgba(255, 255, 255, 0.08);
     --kbd-edge: rgba(255, 255, 255, 0.18);
     --shine: rgba(255, 255, 255, 0.22);
+    --sidebar: rgba(255, 255, 255, 0.03);
   }
 }
 
@@ -45,20 +47,40 @@ body,
 .bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   /* Fixed height: the native drag strip (Panel.headerHeight) sits on top of it. */
   box-sizing: border-box;
   height: 40px;
   flex-shrink: 0;
-  padding: 4px 22px 0;
+  padding: 4px 22px 0 10px;
   border-bottom: 0.5px solid var(--line);
   font-size: 12px;
   user-select: none;
   -webkit-user-select: none;
 }
 
+/* Left of the native drag strip (Panel.toggleInset), so it stays clickable. */
+.bar-toggle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: default;
+}
+
+.bar-toggle:hover,
+.bar-toggle.on {
+  background: var(--hover);
+  color: var(--fg);
+}
+
 .bar .title {
+  flex: 1;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -80,8 +102,20 @@ kbd {
   box-shadow: inset 0 0.5px 0 var(--kbd-edge);
 }
 
+.bar .crumb {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
 .editor-wrap {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   padding: 14px 0 40px;
 }
@@ -211,4 +245,215 @@ kbd {
   border-top: 1px solid var(--line);
   font-size: 11px;
   color: var(--muted);
+}
+
+/* Sidebar */
+.sidebar {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 0.5px solid var(--line);
+  background: var(--sidebar);
+  font-size: 13px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Grab area on the sidebar's right edge. */
+.sb-resize {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 5;
+}
+
+.sb-resize::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  border-radius: 1px;
+  background: transparent;
+  transition: background 120ms ease;
+}
+
+.sb-resize:hover::after,
+.sidebar.resizing .sb-resize::after {
+  background: var(--shine);
+}
+
+/* Keep the col-resize cursor and stop text selection mid-drag. */
+.sidebar.resizing,
+.sidebar.resizing ~ * {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 6px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sb-head-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.sb-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 6px 12px;
+}
+
+.sb-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 8px;
+  cursor: default;
+}
+
+.sb-row:hover {
+  background: var(--hover);
+}
+
+.sb-note.active {
+  background: var(--hover);
+  box-shadow: inset 0 0.5px 0 var(--shine);
+  font-weight: 500;
+}
+
+.sb-note.nested {
+  padding-left: 26px;
+}
+
+.sb-chevron {
+  display: grid;
+  place-items: center;
+  width: 12px;
+  color: var(--muted);
+  transition: transform 120ms ease;
+}
+
+.sb-chevron.open {
+  transform: rotate(90deg);
+}
+
+.sb-glyph {
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.sb-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-count {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.sb-row:hover .sb-count {
+  display: none;
+}
+
+.sb-actions {
+  display: none;
+  gap: 2px;
+}
+
+.sb-row:hover .sb-actions,
+.sb-actions:has(.armed) {
+  display: flex;
+}
+
+.sb-icon {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: default;
+}
+
+.sb-icon:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.sb-icon.armed {
+  background: rgba(255, 69, 58, 0.18);
+  color: #ff453a;
+  font-weight: 600;
+}
+
+.sb-rename {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 6px;
+  border: 0.5px solid var(--shine);
+  border-radius: 6px;
+  outline: 0;
+  background: var(--kbd);
+  color: var(--fg);
+  font: inherit;
+}
+
+.sb-folder,
+.sb-loose {
+  border-radius: 8px;
+}
+
+.sb-loose {
+  min-height: 40px;
+}
+
+.sb-folder.drop,
+.sb-loose.drop {
+  background: var(--hover);
+  box-shadow: inset 0 0 0 1px var(--shine);
+}
+
+.sb-empty {
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sb-empty.nested {
+  padding-left: 32px;
+}
+
+.sb-divider {
+  height: 0.5px;
+  margin: 6px 8px;
+  background: var(--line);
 }
