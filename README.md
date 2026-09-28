@@ -10,6 +10,7 @@ Quick notes for macOS. Notion-style blocks (via [BlockNote](https://www.blocknot
 | `⌃⌥N` | New note |
 | `/` | Block menu (headings, lists, checklists, code, …) |
 | `⌘P` | Search notes (`⌘⌫` deletes the selected one) |
+| `⌘Z` / `⌘⇧Z` | Undo / redo (last 100 changes) |
 | `⌘N` / `⌘T` | New note (inside the panel) |
 | `esc` | Hide |
 

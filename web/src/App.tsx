@@ -174,6 +174,22 @@ function Editor({
     editor.focus();
   }, [editor, focusTick]);
 
+  // Menus (e.g. the block menu's Colors) take focus and don't hand it back, so
+  // ⌘Z would land on <body> and do nothing. Route undo/redo to the editor then.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.metaKey || e.key.toLowerCase() !== "z" || e.defaultPrevented) return;
+      const active = document.activeElement;
+      if (active?.closest(".bn-editor, input, textarea")) return;
+      e.preventDefault();
+      if (e.shiftKey) editor.redo();
+      else editor.undo();
+      editor.focus();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editor]);
+
   // Flush a pending save if the editor goes away mid-debounce.
   const pending = useRef<(() => void) | null>(null);
   useEffect(() => () => pending.current?.(), []);

@@ -88,14 +88,14 @@ final class Panel: NSPanel {
               let key = event.charactersIgnoringModifiers?.lowercased() else {
             return super.performKeyEquivalent(with: event)
         }
-        let shift = event.modifierFlags.contains(.shift)
+        // ⌘Z / ⌘⇧Z are left alone on purpose: the editor has its own undo history
+        // and needs the key event. Sending undo: would hit WebKit's history instead.
         let action: Selector?
         switch key {
         case "x": action = #selector(NSText.cut(_:))
         case "c": action = #selector(NSText.copy(_:))
         case "v": action = #selector(NSText.paste(_:))
         case "a": action = #selector(NSText.selectAll(_:))
-        case "z": action = shift ? Selector(("redo:")) : Selector(("undo:"))
         default: action = nil
         }
         if let action, NSApp.sendAction(action, to: nil, from: self) { return true }
