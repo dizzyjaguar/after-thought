@@ -24,6 +24,10 @@ final class Panel: NSPanel {
         acceptsMouseMovedEvents = true
         minSize = NSSize(width: 420, height: 280)
         contentView = Self.glass(around: Self.withDragStrip(content))
+        // Hovering lifts a faded panel a little.
+        contentView?.addTrackingArea(NSTrackingArea(
+            rect: .zero, options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: self, userInfo: nil))
         setFrameAutosaveName("AfterThoughtPanel")
     }
 
@@ -79,6 +83,39 @@ final class Panel: NSPanel {
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { true }
+
+    /// How see-through the panel gets when you click away (1 = fully visible).
+    static let unfocusedAlpha: CGFloat = 0.65
+    /// A faded panel under the mouse: a little more visible, not fully.
+    static let hoverAlpha: CGFloat = 0.8
+    private var isHovered = false
+
+    override func becomeKey() {
+        super.becomeKey()
+        fade(to: 1)
+    }
+
+    override func resignKey() {
+        super.resignKey()
+        fade(to: isHovered ? Self.hoverAlpha : Self.unfocusedAlpha)
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+        if !isKeyWindow { fade(to: Self.hoverAlpha) }
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        isHovered = false
+        if !isKeyWindow { fade(to: Self.unfocusedAlpha) }
+    }
+
+    private func fade(to alpha: CGFloat) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.18
+            animator().alphaValue = alpha
+        }
+    }
 
     /// We have no Edit menu (menu bar app), so wire up the standard shortcuts here.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
