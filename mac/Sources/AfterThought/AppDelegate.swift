@@ -2,8 +2,12 @@ import AppKit
 import Carbon
 import ServiceManagement
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let store = NoteStore()
+    private lazy var mirror = MarkdownMirror(store: store)
+    private var mirrorToggle: NSMenuItem!
+    private var mirrorShow: NSMenuItem!
+    private var mirrorChange: NSMenuItem!
     private let hotKeys = HotKeys()
     private var editor: EditorWebView!
     private var panel: Panel!
@@ -20,6 +24,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotKeys.register(keyCode: kVK_ANSI_N, modifiers: controlKey | optionKey) { [weak self] in self?.show("new") }
 
         setUpStatusItem()
+        EditorWebView.cleanUpCopiedFiles()
+
+        store.onChange = { [weak self] in self?.mirror.scheduleSync() }
+        mirror.sync()
     }
 
     private func show(_ command: String) {
@@ -55,12 +63,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(item("New Note", "⌃⌥N", #selector(menuNew)))
         menu.addItem(.separator())
         menu.addItem(item("Show Notes Folder", nil, #selector(openFolder)))
+
+        let mirrorMenu = NSMenu()
+        mirrorToggle = item("Keep a Markdown Copy…", nil, #selector(toggleMirror))
+        mirrorShow = item("Show in Finder", nil, #selector(showMirror))
+        mirrorChange = item("Change Folder…", nil, #selector(changeMirror))
+        [mirrorToggle, mirrorShow, mirrorChange].forEach { mirrorMenu.addItem($0) }
+        let mirrorItem = NSMenuItem(title: "Markdown Copy", action: nil, keyEquivalent: "")
+        mirrorItem.submenu = mirrorMenu
+        menu.addItem(mirrorItem)
+
         let login = item("Launch at Login", nil, #selector(toggleLogin))
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit after-thought", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.delegate = self
+        menu.autoenablesItems = false
+        mirrorMenu.autoenablesItems = false
         statusItem.menu = menu
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        let on = mirror.rootURL != nil
+        mirrorToggle.state = on ? .on : .off
+        mirrorShow.isEnabled = on
+        mirrorChange.isEnabled = on
     }
 
     private func item(_ title: String, _ hint: String?, _ action: Selector) -> NSMenuItem {
@@ -73,6 +101,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func menuLast() { show("last") }
     @objc private func menuNew() { show("new") }
     @objc private func openFolder() { NSWorkspace.shared.open(store.dir) }
+
+    /// Off → pick a folder and start. On → stop (the files already written stay put).
+    @objc private func toggleMirror() {
+        if mirror.rootURL == nil { mirror.chooseFolder() } else { mirror.rootURL = nil }
+    }
+
+    @objc private func showMirror() {
+        if let root = mirror.rootURL { NSWorkspace.shared.open(root) }
+    }
+
+    @objc private func changeMirror() { mirror.chooseFolder() }
 
     @objc private func toggleLogin(_ sender: NSMenuItem) {
         do {

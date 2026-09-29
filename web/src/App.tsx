@@ -5,6 +5,7 @@ import { BlockNoteView } from "@blocknote/mantine";
 import { bridge, type Folder, type Note, type NoteMeta } from "./bridge";
 import { Switcher } from "./Switcher";
 import { Sidebar, useSidebarOpen } from "./Sidebar";
+import { backfillMarkdown, copyNotes, type CopyFormat, type CopyTarget } from "./copy";
 
 const newId = () => crypto.randomUUID();
 
@@ -37,6 +38,9 @@ export function App() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [sidebarOpen, setSidebarOpen] = useSidebarOpen();
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  // The open note's latest blocks; saves lag behind by a debounce.
+  const liveRef = useRef<{ id: string; blocks: PartialBlock[] } | null>(null);
   // Tracks whether the open note is still blank, so we can drop it when leaving.
   const blankRef = useRef(true);
 
@@ -103,14 +107,35 @@ export function App() {
   useEffect(() => {
     openLast();
     refresh();
+    backfillMarkdown();
     // Only on first load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const copy = useCallback(
+    async (target: CopyTarget, format: CopyFormat) => {
+      try {
+        setToast(await copyNotes(target, format, notes, folders, liveRef.current));
+      } catch {
+        setToast("Couldn’t copy that. Try again?");
+      }
+    },
+    [notes, folders],
+  );
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = window.setTimeout(() => setToast(null), 2600);
+    return () => window.clearTimeout(t);
+  }, [toast]);
+
   // App-level shortcuts.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey && ["n", "t"].includes(e.key.toLowerCase())) {
+      if (e.metaKey && e.shiftKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        if (note) copy({ kind: "note", id: note.id }, "claude");
+      } else if (e.metaKey && ["n", "t"].includes(e.key.toLowerCase())) {
         e.preventDefault();
         setSwitcherOpen(false);
         newNote();
@@ -128,7 +153,7 @@ export function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [newNote, switcherOpen, setSidebarOpen]);
+  }, [newNote, switcherOpen, setSidebarOpen, note, copy]);
 
   const deleteNote = async (id: string) => {
     await bridge.remove(id);
@@ -206,6 +231,7 @@ export function App() {
             onRenameFolder={renameFolder}
             onDeleteFolder={deleteFolder}
             onRenameDone={() => setRenamingFolder(null)}
+            onCopy={copy}
           />
         )}
         {note && (
@@ -213,8 +239,9 @@ export function App() {
             key={note.id}
             note={note}
             focusTick={focusTick}
-            onChange={(title, empty) => {
+            onChange={(title, empty, blocks) => {
               blankRef.current = empty;
+              liveRef.current = { id: note.id, blocks };
               setNote((n) => (n ? { ...n, title } : n));
               if (empty) return;
               // Keep the sidebar in step without re-reading every file.
@@ -227,6 +254,14 @@ export function App() {
           />
         )}
       </div>
+      {toast && (
+        <div className="toast" role="status">
+          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden>
+            <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {toast}
+        </div>
+      )}
       {switcherOpen && (
         <Switcher
           currentId={note?.id}
@@ -261,7 +296,7 @@ function Editor({
 }: {
   note: Note;
   focusTick: number;
-  onChange: (title: string, empty: boolean) => void;
+  onChange: (title: string, empty: boolean, blocks: Block[]) => void;
 }) {
   const editor = useCreateBlockNote({
     initialContent: note.content
@@ -302,11 +337,14 @@ function Editor({
           const blocks = editor.document;
           const title = titleOf(blocks);
           const empty = isEmpty(blocks);
-          onChange(title, empty);
+          onChange(title, empty, blocks);
           window.clearTimeout(timer.current);
           const save = () => {
             pending.current = null;
-            if (!empty) bridge.save(note.id, title, JSON.stringify(blocks), note.folderId);
+            if (!empty) {
+              const markdown = editor.blocksToMarkdownLossy(blocks).trim();
+              bridge.save(note.id, title, JSON.stringify(blocks), note.folderId, markdown);
+            }
           };
           pending.current = save;
           timer.current = window.setTimeout(save, 300);

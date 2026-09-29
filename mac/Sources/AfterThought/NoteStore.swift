@@ -9,6 +9,7 @@ final class NoteStore {
         var updatedAt: Double   // ms since 1970, matches JS Date.now()
         var content: String     // BlockNote blocks as JSON
         var folderId: String?   // nil = not in a folder
+        var markdown: String?   // readable copy for the Markdown mirror; nil until the web view sends it
     }
 
     struct Folder: Codable {
@@ -17,12 +18,15 @@ final class NoteStore {
     }
 
     let dir: URL
+    let root: URL
     private let foldersFile: URL
+    /// Called after anything changes, so the Markdown mirror can catch up.
+    var onChange: (() -> Void)?
     private let lastIdKey = "lastNoteId"
 
-    init() {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let root = base.appendingPathComponent("after-thought", isDirectory: true)
+    init(root: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("after-thought", isDirectory: true)) {
+        self.root = root
         dir = root.appendingPathComponent("notes", isDirectory: true)
         foldersFile = root.appendingPathComponent("folders.json")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -45,10 +49,12 @@ final class NoteStore {
 
     private func write(_ note: Note) -> Bool {
         guard let url = url(note.id), let data = try? JSONEncoder().encode(note) else { return false }
-        return (try? data.write(to: url, options: .atomic)) != nil
+        let ok = (try? data.write(to: url, options: .atomic)) != nil
+        if ok { onChange?() }
+        return ok
     }
 
-    private func allNotes() -> [Note] {
+    func allNotes() -> [Note] {
         let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
         return files
             .filter { $0.pathExtension == "json" }
@@ -71,10 +77,22 @@ final class NoteStore {
     }
 
     /// `folderId` only applies when the note is first created; after that, use `move`.
-    func save(id: String, title: String, content: String, folderId: String?) -> Bool {
+    func save(id: String, title: String, content: String, folderId: String?, markdown: String?) -> Bool {
         let existing = read(id)
         return write(Note(id: id, title: title, updatedAt: Date().timeIntervalSince1970 * 1000,
-                          content: content, folderId: existing != nil ? existing?.folderId : folderId))
+                          content: content, folderId: existing != nil ? existing?.folderId : folderId,
+                          markdown: markdown ?? existing?.markdown))
+    }
+
+    /// Notes saved before the Markdown mirror existed have no Markdown yet.
+    func idsMissingMarkdown() -> [String] {
+        allNotes().filter { $0.markdown == nil && !$0.content.isEmpty }.map(\.id)
+    }
+
+    func setMarkdown(id: String, markdown: String) -> Bool {
+        guard var note = read(id) else { return false }
+        note.markdown = markdown
+        return write(note)
     }
 
     func move(id: String, folderId: String?) -> Bool {
@@ -89,7 +107,7 @@ final class NoteStore {
         loadFolders().map { ["id": $0.id, "name": $0.name] }
     }
 
-    private func loadFolders() -> [Folder] {
+    func loadFolders() -> [Folder] {
         guard let data = try? Data(contentsOf: foldersFile) else { return [] }
         return (try? JSONDecoder().decode([Folder].self, from: data)) ?? []
     }
@@ -100,7 +118,9 @@ final class NoteStore {
             return Folder(id: id, name: name)
         }
         guard let data = try? JSONEncoder().encode(folders) else { return false }
-        return (try? data.write(to: foldersFile, options: .atomic)) != nil
+        let ok = (try? data.write(to: foldersFile, options: .atomic)) != nil
+        if ok { onChange?() }
+        return ok
     }
 
     /// Removes the folder; its notes stay, just without a folder.
@@ -115,6 +135,7 @@ final class NoteStore {
     func delete(_ id: String) -> Bool {
         guard let url = url(id) else { return false }
         try? FileManager.default.removeItem(at: url)
+        onChange?()
         return true
     }
 

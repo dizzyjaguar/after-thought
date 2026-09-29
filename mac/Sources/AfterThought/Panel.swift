@@ -96,8 +96,10 @@ final class Panel: NSPanel {
         }
         // ⌘Z / ⌘⇧Z are left alone on purpose: the editor has its own undo history
         // and needs the key event. Sending undo: would hit WebKit's history instead.
+        // Plain ⌘ only: ⌘⇧C (Copy for Claude) and friends belong to the web view.
+        let plainCommand = event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
         let action: Selector?
-        switch key {
+        switch plainCommand ? key : "" {
         case "x": action = #selector(NSText.cut(_:))
         case "c": action = #selector(NSText.copy(_:))
         case "v": action = #selector(NSText.paste(_:))

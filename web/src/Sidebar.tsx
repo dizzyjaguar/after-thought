@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Folder, NoteMeta } from "./bridge";
+import type { CopyFormat, CopyTarget } from "./copy";
 
 const DRAG_TYPE = "application/x-after-thought-note";
 const MIN_WIDTH = 160;
@@ -59,35 +60,14 @@ const Icon = {
       <path d="M8 3.5v9M3.5 8h9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   ),
-  trash: (
-    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden>
-      <path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+  moreVertical: (
+    <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden>
+      <circle cx="8" cy="3.5" r="1.3" fill="currentColor" />
+      <circle cx="8" cy="8" r="1.3" fill="currentColor" />
+      <circle cx="8" cy="12.5" r="1.3" fill="currentColor" />
     </svg>
   ),
 };
-
-/** A trash button that needs two clicks: the first arms it, the second deletes. */
-function DeleteButton({ label, onConfirm }: { label: string; onConfirm: () => void }) {
-  const [armed, setArmed] = useState(false);
-  useEffect(() => {
-    if (!armed) return;
-    const t = window.setTimeout(() => setArmed(false), 2500);
-    return () => window.clearTimeout(t);
-  }, [armed]);
-  return (
-    <button
-      className={`sb-icon ${armed ? "armed" : ""}`}
-      title={armed ? "Click again to delete" : label}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (armed) onConfirm();
-        else setArmed(true);
-      }}
-    >
-      {armed ? "Delete?" : Icon.trash}
-    </button>
-  );
-}
 
 export function Sidebar({
   notes,
@@ -102,6 +82,7 @@ export function Sidebar({
   onRenameFolder,
   onDeleteFolder,
   onRenameDone,
+  onCopy,
 }: {
   notes: NoteMeta[];
   folders: Folder[];
@@ -116,6 +97,7 @@ export function Sidebar({
   onRenameFolder: (id: string, name: string) => void;
   onDeleteFolder: (id: string) => void;
   onRenameDone: () => void;
+  onCopy: (target: CopyTarget, format: CopyFormat) => void;
 }) {
   const [collapsed, setCollapsed] = useState(() => loadSet("at:collapsed"));
   const [editing, setEditing] = useState<string | null>(null);
@@ -185,10 +167,38 @@ export function Sidebar({
     };
   };
 
+  const [menu, setMenu] = useState<(CopyTarget & { x: number; y: number }) | null>(null);
+  const openMenu = (e: React.MouseEvent, target: CopyTarget) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMenu({ ...target, x: e.clientX, y: e.clientY });
+  };
+
+  /** The ⋮ button that opens the same menu as right-click, under itself. */
+  const moreButton = (target: CopyTarget) => (
+    <button
+      className="sb-icon"
+      title="More"
+      aria-label="More actions"
+      aria-haspopup="menu"
+      data-menu-trigger
+      onClick={(e) => {
+        e.stopPropagation();
+        if (menu?.id === target.id) return setMenu(null);
+        const r = e.currentTarget.getBoundingClientRect();
+        setMenu({ ...target, x: r.left, y: r.bottom + 4 });
+      }}
+    >
+      {Icon.moreVertical}
+    </button>
+  );
+
   const noteRow = (n: NoteMeta, nested: boolean) => (
     <div
       key={n.id}
-      className={`sb-row sb-note ${nested ? "nested" : ""} ${n.id === currentId ? "active" : ""}`}
+      className={`sb-row sb-note ${nested ? "nested" : ""} ${n.id === currentId ? "active" : ""} ${
+        menu?.id === n.id ? "menu-open" : ""
+      }`}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData(DRAG_TYPE, n.id);
@@ -196,11 +206,12 @@ export function Sidebar({
       }}
       onDragEnd={() => setDropTarget(null)}
       onClick={() => onOpen(n.id)}
+      onContextMenu={(e) => openMenu(e, { kind: "note", id: n.id })}
     >
       <span className="sb-glyph">{Icon.note}</span>
       <span className="sb-label">{n.title || "Untitled"}</span>
       <span className="sb-actions">
-        <DeleteButton label="Delete note" onConfirm={() => onDeleteNote(n.id)} />
+        {moreButton({ kind: "note", id: n.id })}
       </span>
     </div>
   );
@@ -240,7 +251,11 @@ export function Sidebar({
           const inside = notes.filter((n) => n.folderId === f.id);
           return (
             <div key={f.id} className={`sb-folder ${dropTarget === f.id ? "drop" : ""}`} {...dropProps(f.id)}>
-              <div className="sb-row" onClick={() => toggle(f.id)}>
+              <div
+                className={`sb-row ${menu?.id === f.id ? "menu-open" : ""}`}
+                onClick={() => toggle(f.id)}
+                onContextMenu={(e) => openMenu(e, { kind: "folder", id: f.id })}
+              >
                 <span className={`sb-chevron ${open ? "open" : ""}`}>{Icon.chevron}</span>
                 <span className="sb-glyph">{Icon.folder}</span>
                 {editing === f.id ? (
@@ -279,22 +294,17 @@ export function Sidebar({
                 )}
                 <span className="sb-count">{inside.length || ""}</span>
                 <span className="sb-actions">
-                  <button
-                    className="sb-icon"
-                    title="New note in folder"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!open) toggle(f.id);
-                      onNewNote(f.id);
-                    }}
-                  >
-                    {Icon.plus}
-                  </button>
-                  <DeleteButton label="Delete folder (keeps notes)" onConfirm={() => onDeleteFolder(f.id)} />
+                  {moreButton({ kind: "folder", id: f.id })}
                 </span>
               </div>
               {open && inside.map((n) => noteRow(n, true))}
-              {open && !inside.length && <div className="sb-empty nested">Drop notes here</div>}
+              {open && (
+                // Sticky: in a long folder it pins to the bottom of the sidebar, so it's never scrolled away.
+                <button className="sb-row sb-new nested" onClick={() => onNewNote(f.id)}>
+                  <span className="sb-glyph">{Icon.plus}</span>
+                  <span className="sb-label">New note</span>
+                </button>
+              )}
             </div>
           );
         })}
@@ -305,7 +315,147 @@ export function Sidebar({
           {!notes.length && <div className="sb-empty">No notes yet</div>}
         </div>
       </div>
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={[
+            ...(menu.kind === "folder"
+              ? [
+                  {
+                    label: "New note in folder",
+                    run: () => {
+                      if (collapsed.has(menu.id)) toggle(menu.id);
+                      onNewNote(menu.id);
+                    },
+                  },
+                  null,
+                ]
+              : []),
+            {
+              label: "Copy for Claude",
+              hint: menu.kind === "note" && menu.id === currentId ? "⌘⇧C" : undefined,
+              primary: true,
+              run: () => onCopy(menu, "claude"),
+            },
+            { label: "Copy as Markdown", run: () => onCopy(menu, "markdown") },
+            ...(menu.kind === "note"
+              ? [
+                  null,
+                  {
+                    label: "Delete note",
+                    confirm: "Confirm delete",
+                    danger: true,
+                    run: () => onDeleteNote(menu.id),
+                  },
+                ]
+              : []),
+            ...(menu.kind === "folder"
+              ? [
+                  { label: "Rename", run: () => setEditing(menu.id) },
+                  null,
+                  {
+                    label: "Delete folder",
+                    hint: "keeps notes",
+                    confirm: "Confirm delete",
+                    danger: true,
+                    run: () => onDeleteFolder(menu.id),
+                  },
+                ]
+              : []),
+          ]}
+        />
+      )}
     </aside>
+  );
+}
+
+type MenuItem = {
+  label: string;
+  hint?: string;
+  primary?: boolean;
+  danger?: boolean;
+  /** Needs a second click; this label shows after the first. */
+  confirm?: string;
+  run: () => void;
+};
+
+/** Right-click menu. `null` items are separators. */
+function ContextMenu({
+  x,
+  y,
+  items,
+  onClose,
+}: {
+  x: number;
+  y: number;
+  items: (MenuItem | null)[];
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ x, y });
+  const [armed, setArmed] = useState<string | null>(null);
+
+  // Keep it on screen.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const { width, height } = el.getBoundingClientRect();
+    setPos({
+      x: Math.min(x, window.innerWidth - width - 8),
+      y: Math.min(y, window.innerHeight - height - 8),
+    });
+  }, [x, y]);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Element;
+      // The ⋮ button toggles the menu itself.
+      if (ref.current?.contains(target) || target.closest?.("[data-menu-trigger]")) return;
+      onClose();
+    };
+    // Capture phase, so esc closes the menu before the app sees it and hides the panel.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+    };
+    window.addEventListener("mousedown", onDown, true);
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("blur", onClose);
+    return () => {
+      window.removeEventListener("mousedown", onDown, true);
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("blur", onClose);
+    };
+  }, [onClose]);
+
+  return (
+    <div ref={ref} className="ctx-menu" role="menu" style={{ left: pos.x, top: pos.y }}>
+      {items.map((item, i) =>
+        item ? (
+          <button
+            key={item.label}
+            role="menuitem"
+            className={`ctx-item ${item.primary ? "primary" : ""} ${item.danger ? "danger" : ""} ${
+              armed === item.label ? "armed" : ""
+            }`}
+            onClick={() => {
+              if (item.confirm && armed !== item.label) return setArmed(item.label);
+              onClose();
+              item.run();
+            }}
+          >
+            <span>{armed === item.label && item.confirm ? item.confirm : item.label}</span>
+            {item.hint && <span className="ctx-hint">{item.hint}</span>}
+          </button>
+        ) : (
+          <div key={`sep-${i}`} className="ctx-sep" />
+        ),
+      )}
+    </div>
   );
 }
 

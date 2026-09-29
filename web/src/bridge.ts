@@ -13,7 +13,16 @@ export type Folder = { id: string; name: string };
 type Message =
   | { type: "list" }
   | { type: "load"; id: string }
-  | { type: "save"; id: string; title: string; content: string; folderId: string | null }
+  | {
+      type: "save";
+      id: string;
+      title: string;
+      content: string;
+      folderId: string | null;
+      markdown: string;
+    }
+  | { type: "idsMissingMarkdown" }
+  | { type: "setMarkdown"; id: string; markdown: string }
   | { type: "delete"; id: string }
   | { type: "move"; id: string; folderId: string | null }
   | { type: "folders" }
@@ -21,6 +30,8 @@ type Message =
   | { type: "deleteFolder"; id: string }
   | { type: "getLastId" }
   | { type: "setLastId"; id: string }
+  | { type: "copy"; text: string }
+  | { type: "copyFile"; name: string; text: string }
   | { type: "hide" };
 
 declare global {
@@ -38,6 +49,10 @@ const native = window.webkit?.messageHandlers?.bridge;
 
 function send<T>(msg: Message): Promise<T> {
   if (native) return native.postMessage(msg) as Promise<T>;
+  // A browser can't put a file on the clipboard, so copyFile falls back to text.
+  if (msg.type === "copy" || msg.type === "copyFile") {
+    return navigator.clipboard.writeText(msg.text).then(() => true as T);
+  }
   return Promise.resolve(browserFallback(msg) as T);
 }
 
@@ -106,7 +121,13 @@ function browserFallback(msg: Message): unknown {
     case "setLastId":
       localStorage.setItem("at:last", msg.id);
       return true;
+    // The Markdown mirror only exists in the Mac app.
+    case "idsMissingMarkdown":
+      return [];
     case "hide":
+    case "copy":
+    case "copyFile":
+    case "setMarkdown":
       return true;
   }
 }
@@ -115,8 +136,11 @@ export const bridge = {
   list: () => send<NoteMeta[]>({ type: "list" }),
   load: (id: string) => send<Note | null>({ type: "load", id }),
   /** `folderId` only counts when the note is first created; use `move` after. */
-  save: (id: string, title: string, content: string, folderId: string | null) =>
-    send<boolean>({ type: "save", id, title, content, folderId }),
+  save: (id: string, title: string, content: string, folderId: string | null, markdown: string) =>
+    send<boolean>({ type: "save", id, title, content, folderId, markdown }),
+  idsMissingMarkdown: () => send<string[]>({ type: "idsMissingMarkdown" }),
+  setMarkdown: (id: string, markdown: string) =>
+    send<boolean>({ type: "setMarkdown", id, markdown }),
   move: (id: string, folderId: string | null) =>
     send<boolean>({ type: "move", id, folderId }),
   folders: () => send<Folder[]>({ type: "folders" }),
@@ -126,4 +150,8 @@ export const bridge = {
   getLastId: () => send<string | null>({ type: "getLastId" }),
   setLastId: (id: string) => send<boolean>({ type: "setLastId", id }),
   hide: () => send<boolean>({ type: "hide" }),
+  /** Puts plain text on the system clipboard. */
+  copy: (text: string) => send<boolean>({ type: "copy", text }),
+  /** Saves `text` as a file called `name` and puts that file on the clipboard. */
+  copyFile: (name: string, text: string) => send<boolean>({ type: "copyFile", name, text }),
 };

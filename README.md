@@ -11,6 +11,7 @@ Quick notes for macOS. Notion-style blocks (via [BlockNote](https://www.blocknot
 | `/` | Block menu (headings, lists, checklists, code, …) |
 | `⌘\` | Show / hide the sidebar (folders) |
 | `⌘P` | Search notes (`⌘⌫` deletes the selected one) |
+| `⌘⇧C` | Copy the open note for Claude (right-click a note or folder for more) |
 | `⌘Z` / `⌘⇧Z` | Undo / redo (last 100 changes) |
 | `⌘N` / `⌘T` | New note (inside the panel) |
 | `esc` | Hide |
@@ -29,6 +30,8 @@ Needs Node and Xcode. The app lives in the menu bar (no Dock icon).
 - `web/` — React + BlockNote editor (Vite)
 - `mac/` — Swift app: floating panel, global hotkeys, menu bar, file storage
 - Notes are saved as JSON in `~/Library/Application Support/after-thought/notes/`
+- Optional readable copy: menu bar ✦ → Markdown Copy → pick a folder. The app keeps
+  `After Thought/<Folder>/<Note>.md` in sync (one way: edits there get overwritten)
 
 ## Dev
 

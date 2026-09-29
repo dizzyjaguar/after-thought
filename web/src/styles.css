@@ -9,6 +9,8 @@
   --kbd-edge: rgba(255, 255, 255, 0.8);
   --shine: rgba(255, 255, 255, 0.7);
   --sidebar: rgba(255, 255, 255, 0.18);
+  /* Claude's clay; dark enough for white text. */
+  --accent: #b85a3c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -339,7 +341,8 @@ kbd {
   font-weight: 500;
 }
 
-.sb-note.nested {
+.sb-note.nested,
+.sb-new.nested {
   padding-left: 26px;
 }
 
@@ -384,7 +387,7 @@ kbd {
 }
 
 .sb-row:hover .sb-actions,
-.sb-actions:has(.armed) {
+.sb-row.menu-open .sb-actions {
   display: flex;
 }
 
@@ -406,12 +409,6 @@ kbd {
 .sb-icon:hover {
   background: var(--hover);
   color: var(--fg);
-}
-
-.sb-icon.armed {
-  background: rgba(255, 69, 58, 0.18);
-  color: #ff453a;
-  font-weight: 600;
 }
 
 .sb-rename {
@@ -442,18 +439,151 @@ kbd {
   box-shadow: inset 0 0 0 1px var(--shine);
 }
 
+/* "+ New note" at the end of an open folder. Sticks to the sidebar's bottom edge
+   while the folder runs past it. */
+.sb-new {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  width: 100%;
+  border: 0;
+  background: var(--panel);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+}
+
+.sb-new:hover {
+  color: var(--fg);
+  background: var(--panel);
+  box-shadow: inset 0 0 0 100px var(--hover);
+}
+
 .sb-empty {
   padding: 4px 8px;
   font-size: 12px;
   color: var(--muted);
 }
 
-.sb-empty.nested {
-  padding-left: 32px;
-}
-
 .sb-divider {
   height: 0.5px;
   margin: 6px 8px;
   background: var(--line);
+}
+
+/* Right-click menu */
+.ctx-menu {
+  position: fixed;
+  z-index: 2000;
+  min-width: 220px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--panel);
+  border: 0.5px solid var(--shine);
+  border-radius: 13px;
+  box-shadow:
+    inset 0 1px 0 var(--shine),
+    0 16px 44px rgba(0, 0, 0, 0.3);
+  isolation: isolate;
+  font-size: 13px;
+}
+
+/* Blur on a layer behind, like the other menus. */
+.ctx-menu::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+}
+
+.ctx-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.ctx-item:hover {
+  background: var(--hover);
+}
+
+.ctx-item.primary:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.ctx-item.danger {
+  color: #ff453a;
+}
+
+.ctx-item.danger.armed,
+.ctx-item.danger.armed:hover {
+  background: rgba(255, 69, 58, 0.18);
+  font-weight: 600;
+}
+
+.ctx-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ctx-item.primary:hover .ctx-hint {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.ctx-sep {
+  height: 0.5px;
+  margin: 4px 8px;
+  background: var(--line);
+}
+
+/* "Copied" message */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  z-index: 2100;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 40px);
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 0.5px solid var(--shine);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  font-size: 13px;
+  white-space: nowrap;
+  animation: toast-in 160ms ease-out;
+}
+
+.toast svg {
+  flex-shrink: 0;
+  color: #34c759;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
 }
