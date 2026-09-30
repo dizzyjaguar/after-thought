@@ -5,6 +5,7 @@ import AppKit
 /// It only ever deletes files it wrote itself (tracked in a manifest).
 final class MarkdownMirror {
     private let store: NoteStore
+    private let defaults: UserDefaults
     private let manifestFile: URL
     private let rootKey = "markdownMirrorRoot"
     private var pending: DispatchWorkItem?
@@ -14,16 +15,17 @@ final class MarkdownMirror {
         var paths: [String] // relative to root
     }
 
-    init(store: NoteStore) {
+    init(store: NoteStore, defaults: UserDefaults = .standard) {
         self.store = store
+        self.defaults = defaults
         manifestFile = store.root.appendingPathComponent("mirror-manifest.json")
     }
 
     /// nil when the mirror is off.
     var rootURL: URL? {
-        get { UserDefaults.standard.url(forKey: rootKey) }
+        get { defaults.url(forKey: rootKey) }
         set {
-            UserDefaults.standard.set(newValue, forKey: rootKey)
+            defaults.set(newValue, forKey: rootKey)
             scheduleSync()
         }
     }

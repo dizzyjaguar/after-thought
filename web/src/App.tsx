@@ -5,30 +5,10 @@ import { BlockNoteView } from "@blocknote/mantine";
 import { bridge, type Folder, type Note, type NoteMeta } from "./bridge";
 import { Switcher } from "./Switcher";
 import { Sidebar, useSidebarOpen } from "./Sidebar";
+import { isEmpty, titleOf } from "./notes";
 import { backfillMarkdown, copyNotes, type CopyFormat, type CopyTarget } from "./copy";
 
 const newId = () => crypto.randomUUID();
-
-function inlineText(content: unknown): string {
-  if (!Array.isArray(content)) return "";
-  return content
-    .map((c) => (c.type === "text" ? c.text : inlineText(c.content)))
-    .join("");
-}
-
-function titleOf(blocks: Block[]): string {
-  for (const b of blocks) {
-    const text = inlineText(b.content).trim();
-    if (text) return text.slice(0, 80);
-  }
-  return "";
-}
-
-function isEmpty(blocks: Block[]): boolean {
-  return blocks.every(
-    (b) => b.type === "paragraph" && !inlineText(b.content).trim() && !b.children.length,
-  );
-}
 
 export function App() {
   const [note, setNote] = useState<Note | null>(null);

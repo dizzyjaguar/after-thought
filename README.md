@@ -84,6 +84,13 @@ AFTER_THOUGHT_DEV_URL=http://localhost:5173 build/after-thought.app/Contents/Mac
 
 The editor also runs on its own in a browser at `http://localhost:5173`, saving to the browser's storage instead of the Mac.
 
+### Tests
+
+```bash
+npm --prefix web test      # editor: titles, copying for Claude, browser storage
+swift test --package-path mac   # app: saving notes and folders, the Markdown copy
+```
+
 Commits follow [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `chore:`, …).
 
 ## Credits

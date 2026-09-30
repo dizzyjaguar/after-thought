@@ -14,6 +14,11 @@ let package = Package(
                 .linkedFramework("Carbon"),
                 .linkedFramework("ServiceManagement"),
             ]
-        )
+        ),
+        .testTarget(
+            name: "AfterThoughtTests",
+            dependencies: ["AfterThought"],
+            path: "Tests/AfterThoughtTests"
+        ),
     ]
 )
