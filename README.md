@@ -5,9 +5,9 @@
 # After Thought
 
 **Quick notes for your Mac, with Notion-style blocks.**<br>
-One shortcut opens a floating Liquid Glass window with your last note, ready to type.
+Open-source quick notes for productive people.
 
-![macOS](https://img.shields.io/badge/macOS-13%2B-111?logo=apple&logoColor=white)
+![macOS](https://img.shields.io/badge/macOS-26-111?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-AppKit-F05138?logo=swift&logoColor=white)
 ![BlockNote](https://img.shields.io/badge/editor-BlockNote-555)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
@@ -30,7 +30,7 @@ One shortcut opens a floating Liquid Glass window with your last note, ready to 
 
 There's no download yet, so build it from source. You need:
 
-- macOS 13 or newer (Liquid Glass needs macOS 26; older versions get a blurred window instead)
+- macOS 26 (it's only been tested there so far; older versions should get a plain blurred window instead of Liquid Glass, but that hasn't been tried)
 - Xcode with the macOS 26 SDK
 - Node.js 20.19 or newer
 
