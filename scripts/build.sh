@@ -19,6 +19,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/AfterThought"
 cp -R "$ROOT/web/dist" "$APP/Contents/Resources/web"
 cp "$ROOT/mac/Info.plist" "$APP/Contents/Info.plist"
+cp "$ROOT/mac/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 
 # Ad-hoc sign so macOS lets it run locally.
 codesign --force --deep --sign - "$APP" >/dev/null
