@@ -66,13 +66,14 @@ In the sidebar, right-click a note or folder, or use its **⋮** button, to copy
 
 ## Development
 
-After Thought is two parts that talk to each other:
+The code lives in these folders:
 
 | Folder | What's inside |
 | --- | --- |
 | `web/` | The editor: React + [BlockNote](https://www.blocknotejs.org), built with Vite |
 | `mac/` | The app: Swift/AppKit for the window, hotkeys, menu bar, and saving notes |
 | `scripts/build.sh` | Builds both and puts them together into `build/after-thought.app` |
+| `site/` | The landing page (Vite + React). Run it with `npm --prefix site run dev` |
 
 To work on the editor with live reload, run the dev server and point the app at it:
 
