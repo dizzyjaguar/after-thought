@@ -18,7 +18,9 @@ export function App() {
   const [folders, setFolders] = useState<Folder[]>([]);
   const [sidebarOpen, setSidebarOpen] = useSidebarOpen();
   const [renamingFolder, setRenamingFolder] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ kind: "done"; text: string } | { kind: "escHint" } | null>(
+    null,
+  );
   // The open note's latest blocks; saves lag behind by a debounce.
   const liveRef = useRef<{ id: string; blocks: PartialBlock[] } | null>(null);
   // Tracks whether the open note is still blank, so we can drop it when leaving.
@@ -95,9 +97,9 @@ export function App() {
   const copy = useCallback(
     async (target: CopyTarget, format: CopyFormat) => {
       try {
-        setToast(await copyNotes(target, format, notes, folders, liveRef.current));
+        setToast({ kind: "done", text: await copyNotes(target, format, notes, folders, liveRef.current) });
       } catch {
-        setToast("Couldn’t copy that. Try again?");
+        setToast({ kind: "done", text: "Couldn’t copy that. Try again?" });
       }
     },
     [notes, folders],
@@ -105,7 +107,7 @@ export function App() {
 
   useEffect(() => {
     if (!toast) return;
-    const t = window.setTimeout(() => setToast(null), 2600);
+    const t = window.setTimeout(() => setToast(null), toast.kind === "escHint" ? 1600 : 2600);
     return () => window.clearTimeout(t);
   }, [toast]);
 
@@ -125,10 +127,22 @@ export function App() {
       } else if (e.metaKey && (e.code === "Backslash" || e.key === "\\")) {
         e.preventDefault();
         setSidebarOpen((o) => !o);
-      } else if (e.key === "Escape" && !e.defaultPrevented && !switcherOpen) {
-        // Let BlockNote close its own menus first.
-        if (document.querySelector(".bn-suggestion-menu")) return;
-        bridge.hide();
+      } else if (e.key === "Escape" && !switcherOpen) {
+        if (!e.defaultPrevented && !document.querySelector(".bn-suggestion-menu")) {
+          setToast(null);
+          bridge.hide();
+          return;
+        }
+        // Something else used this esc: the editor stopped typing, or a menu closed.
+        // If the next esc will hide the window, say so.
+        window.setTimeout(() => {
+          const busy =
+            document.activeElement?.closest(".bn-editor") ||
+            document.querySelector(
+              ".bn-suggestion-menu, .bn-formatting-toolbar, .mantine-Menu-dropdown, .mantine-Popover-dropdown",
+            );
+          if (!busy) setToast({ kind: "escHint" });
+        });
       }
     };
     window.addEventListener("keydown", onKey);
@@ -235,11 +249,19 @@ export function App() {
         )}
       </div>
       {toast && (
-        <div className="toast" role="status">
-          <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden>
-            <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {toast}
+        <div className={`toast ${toast.kind}`} role="status">
+          {toast.kind === "escHint" ? (
+            <span>
+              Press <kbd>esc</kbd> again to hide
+            </span>
+          ) : (
+            <>
+              <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden>
+                <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {toast.text}
+            </>
+          )}
         </div>
       )}
       {switcherOpen && (

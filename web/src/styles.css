@@ -576,6 +576,10 @@ kbd {
   animation: toast-in 160ms ease-out;
 }
 
+.toast kbd {
+  margin: 0 3px;
+}
+
 .toast svg {
   flex-shrink: 0;
   color: #34c759;
