@@ -13,7 +13,13 @@ export function App() {
       <div className="nav-bar">
         <nav className="nav">
           <a className="brand" href="#">
-            <img src={icon} alt="" width={32} height={32} />
+            {/* The app icon's sparkle (assets/icon.svg), plain white like in the menu bar. */}
+            <svg className="brand-mark" viewBox="262 262 500 500" width="20" height="20" aria-hidden>
+              <path
+                d="M512 262 C 532 440, 584 492, 762 512 C 584 532, 532 584, 512 762 C 492 584, 440 532, 262 512 C 440 492, 492 440, 512 262 Z"
+                fill="currentColor"
+              />
+            </svg>
             After Thought
           </a>
           <a className="button ghost small" href={REPO}>
