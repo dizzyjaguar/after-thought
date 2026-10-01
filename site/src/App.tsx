@@ -1,10 +1,20 @@
 import icon from "../../assets/icon.png";
 import screenshot from "../../assets/screenshot.png";
 import { CallScene } from "./CallScene";
+import { useFadeDemo, useReveal, type FadePhase } from "./motion";
 
 const REPO = "https://github.com/dizzyjaguar/after-thought";
 
+const LEVELS: { phase: FadePhase; pct: string; label: string }[] = [
+  { phase: "focus", pct: "100%", label: "Typing in your note" },
+  { phase: "hover", pct: "80%", label: "Mouse over it" },
+  { phase: "away", pct: "65%", label: "Clicked away" },
+];
+
 export function App() {
+  useReveal();
+  const phase = useFadeDemo();
+
   return (
     <div className="page">
       <div className="glow glow-violet" aria-hidden />
@@ -49,12 +59,13 @@ export function App() {
         </header>
 
         <img
+          data-reveal
           className="screenshot"
           src={screenshot}
           alt="After Thought window with a sidebar of folders and a note with a checklist"
         />
 
-        <section className="split">
+        <section className="split" data-reveal>
           <div className="split-text">
             <p className="eyebrow">Made for calls and deep work</p>
             <h2>Stays open. Stays out of the way.</h2>
@@ -63,23 +74,20 @@ export function App() {
               into the meeting and they fade, so you can still see who’s talking.
             </p>
             <ul className="levels">
-              <li>
-                <span className="level l100">100%</span>Typing in your note
-              </li>
-              <li>
-                <span className="level l80">80%</span>Mouse over it
-              </li>
-              <li>
-                <span className="level l65">65%</span>Clicked away
-              </li>
+              {LEVELS.map((l) => (
+                <li key={l.phase} className={l.phase === phase ? "active" : ""}>
+                  <span className="level">{l.pct}</span>
+                  {l.label}
+                </li>
+              ))}
             </ul>
           </div>
           <div className="split-scene">
-            <CallScene />
+            <CallScene phase={phase} />
           </div>
         </section>
 
-        <section className="features">
+        <section className="features" data-reveal>
           <h2>Everything a quick note needs</h2>
           <div className="feature-grid">
             <article className="feature">
@@ -98,7 +106,7 @@ export function App() {
               <div className="feature-art" aria-hidden>
                 <div className="slash-menu">
                   <div className="slash">/</div>
-                  <div className="slash-item active">
+                  <div className="slash-item">
                     <span className="slash-icon h1">H1</span>Heading
                   </div>
                   <div className="slash-item">
@@ -129,6 +137,12 @@ export function App() {
                     </svg>
                     Morning standup.md
                   </div>
+                  <span className="copied">
+                    <svg viewBox="0 0 16 16" width="12" height="12">
+                      <path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    Copied
+                  </span>
                   <div className="paste">
                     <svg viewBox="0 0 16 16" width="14" height="14">
                       <path d="M8 2l1.3 4.7L14 8l-4.7 1.3L8 14l-1.3-4.7L2 8l4.7-1.3z" fill="currentColor" />
@@ -143,7 +157,7 @@ export function App() {
           </div>
         </section>
 
-        <section className="beta" id="beta">
+        <section className="beta" id="beta" data-reveal>
           <span className="badge">
             <span className="dot" />
             Currently in beta
