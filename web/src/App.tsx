@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Block, PartialBlock } from "@blocknote/core";
-import { useCreateBlockNote } from "@blocknote/react";
+import { FormattingToolbarController, useCreateBlockNote } from "@blocknote/react";
+import { flip, offset, shift } from "@floating-ui/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import { bridge, type Folder, type Note, type NoteMeta } from "./bridge";
 import { Switcher } from "./Switcher";
@@ -9,6 +10,18 @@ import { isEmpty, titleOf } from "./notes";
 import { backfillMarkdown, copyNotes, type CopyFormat, type CopyTarget } from "./copy";
 
 const newId = () => crypto.randomUUID();
+
+/** Height of the top bar (`.bar`), which also hides the window's drag area in the app. */
+const HEADER_HEIGHT = 40;
+
+// The formatting toolbar normally sits above the selection. On a note's first lines that
+// lands under the top bar, where it's hidden and can't be clicked. Treat the bar as
+// "no room" so the toolbar flips below the selection instead.
+const toolbarFloating = {
+  useFloatingOptions: {
+    middleware: [offset(10), shift(), flip({ padding: { top: HEADER_HEIGHT + 4 } })],
+  },
+};
 
 export function App() {
   const [note, setNote] = useState<Note | null>(null);
@@ -335,6 +348,7 @@ function Editor({
     <div className="editor-wrap">
       <BlockNoteView
         editor={editor}
+        formattingToolbar={false}
         onChange={() => {
           const blocks = editor.document;
           const title = titleOf(blocks);
@@ -351,7 +365,9 @@ function Editor({
           pending.current = save;
           timer.current = window.setTimeout(save, 300);
         }}
-      />
+      >
+        <FormattingToolbarController floatingUIOptions={toolbarFloating} />
+      </BlockNoteView>
     </div>
   );
 }
