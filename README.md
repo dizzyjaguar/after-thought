@@ -7,6 +7,8 @@
 **Quick notes for your Mac, with Notion-style blocks.**<br>
 Open-source quick notes for productive people.
 
+[after-thought.dev](https://after-thought.dev)
+
 ![macOS](https://img.shields.io/badge/macOS-26-111?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-AppKit-F05138?logo=swift&logoColor=white)
 ![BlockNote](https://img.shields.io/badge/editor-BlockNote-555)
@@ -73,7 +75,7 @@ The code lives in these folders:
 | `web/` | The editor: React + [BlockNote](https://www.blocknotejs.org), built with Vite |
 | `mac/` | The app: Swift/AppKit for the window, hotkeys, menu bar, and saving notes |
 | `scripts/build.sh` | Builds both and puts them together into `build/after-thought.app` |
-| `site/` | The landing page (Vite + React). Run it with `npm --prefix site run dev` |
+| `site/` | The landing page at [after-thought.dev](https://after-thought.dev) (Vite + React, hosted on Cloudflare). Run it with `npm --prefix site run dev` |
 
 To work on the editor with live reload, run the dev server and point the app at it:
 
