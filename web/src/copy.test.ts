@@ -45,7 +45,7 @@ describe("toMarkdown", () => {
 describe("Copy for Claude", () => {
   it("copies a note as one .md file named after it", async () => {
     const copyFile = vi.spyOn(bridge, "copyFile").mockResolvedValue(true);
-    const message = await copyNotes({ kind: "note", id: "paint" }, "claude", notes, folders, null);
+    const message = await copyNotes({ kind: "note", id: "paint" }, "claude", notes, folders, []);
 
     expect(copyFile).toHaveBeenCalledTimes(1);
     const [name, text] = copyFile.mock.calls[0];
@@ -56,7 +56,7 @@ describe("Copy for Claude", () => {
 
   it("copies a whole folder as one file named after the folder", async () => {
     const copyFile = vi.spyOn(bridge, "copyFile").mockResolvedValue(true);
-    await copyNotes({ kind: "folder", id: "home" }, "claude", notes, folders, null);
+    await copyNotes({ kind: "folder", id: "home" }, "claude", notes, folders, []);
 
     const [name, text] = copyFile.mock.calls[0];
     expect(name).toBe("Home projects.md");
@@ -68,7 +68,7 @@ describe("Copy for Claude", () => {
   it("uses what's on screen, even if it isn't saved yet", async () => {
     const copyFile = vi.spyOn(bridge, "copyFile").mockResolvedValue(true);
     const live = { id: "paint", blocks: [{ type: "paragraph", content: "Just typed" }] as PartialBlock[] };
-    await copyNotes({ kind: "note", id: "paint" }, "claude", notes, folders, live);
+    await copyNotes({ kind: "note", id: "paint" }, "claude", notes, folders, [live]);
     expect(copyFile.mock.calls[0][1]).toBe("Just typed\n");
   });
 });
@@ -77,7 +77,7 @@ describe("Copy as Markdown", () => {
   it("copies plain text, not a file", async () => {
     const copy = vi.spyOn(bridge, "copy").mockResolvedValue(true);
     const copyFile = vi.spyOn(bridge, "copyFile");
-    const message = await copyNotes({ kind: "folder", id: "home" }, "markdown", notes, folders, null);
+    const message = await copyNotes({ kind: "folder", id: "home" }, "markdown", notes, folders, []);
 
     expect(copyFile).not.toHaveBeenCalled();
     expect(copy.mock.calls[0][0]).toContain("\n\n---\n\n");
@@ -91,11 +91,11 @@ describe("nothing to copy", () => {
     const copyFile = vi.spyOn(bridge, "copyFile");
     const withEmpty = [...folders, { id: "none", name: "Empty folder" }];
 
-    expect(await copyNotes({ kind: "note", id: "empty" }, "claude", notes, folders, null)).toBe(
+    expect(await copyNotes({ kind: "note", id: "empty" }, "claude", notes, folders, [])).toBe(
       "This note is empty",
     );
     expect(
-      await copyNotes({ kind: "folder", id: "none" }, "claude", notes, withEmpty, null),
+      await copyNotes({ kind: "folder", id: "none" }, "claude", notes, withEmpty, []),
     ).toBe("“Empty folder” has no notes to copy");
     expect(copy).not.toHaveBeenCalled();
     expect(copyFile).not.toHaveBeenCalled();

@@ -73,6 +73,7 @@ export function Sidebar({
   notes,
   folders,
   currentId,
+  besideId,
   renamingId,
   onOpen,
   onNewNote,
@@ -87,9 +88,12 @@ export function Sidebar({
   notes: NoteMeta[];
   folders: Folder[];
   currentId?: string;
+  /** The note open on the other side of a split. */
+  besideId?: string;
   /** Folder whose name is being edited (set right after creating one). */
   renamingId: string | null;
-  onOpen: (id: string) => void;
+  /** `beside` opens it on the other side, splitting the editor if needed. */
+  onOpen: (id: string, beside?: boolean) => void;
   onNewNote: (folderId: string | null) => void;
   onDeleteNote: (id: string) => void;
   onMove: (noteId: string, folderId: string | null) => void;
@@ -197,6 +201,8 @@ export function Sidebar({
     <div
       key={n.id}
       className={`sb-row sb-note ${nested ? "nested" : ""} ${n.id === currentId ? "active" : ""} ${
+        n.id === besideId ? "beside" : ""
+      } ${
         menu?.id === n.id ? "menu-open" : ""
       }`}
       draggable
@@ -205,7 +211,7 @@ export function Sidebar({
         e.dataTransfer.effectAllowed = "move";
       }}
       onDragEnd={() => setDropTarget(null)}
-      onClick={() => onOpen(n.id)}
+      onClick={(e) => onOpen(n.id, e.altKey)}
       onContextMenu={(e) => openMenu(e, { kind: "note", id: n.id })}
     >
       <span className="sb-glyph">{Icon.note}</span>
@@ -321,6 +327,9 @@ export function Sidebar({
           y={menu.y}
           onClose={() => setMenu(null)}
           items={[
+            ...(menu.kind === "note"
+              ? [{ label: "Open to the side", hint: "⌥ click", run: () => onOpen(menu.id, true) }, null]
+              : []),
             ...(menu.kind === "folder"
               ? [
                   {

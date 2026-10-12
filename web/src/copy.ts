@@ -18,7 +18,7 @@ export function toMarkdown(blocks: PartialBlock[]): string {
 }
 
 /**
- * Builds the text and copies it. `live` is the open note's current blocks, which
+ * Builds the text and copies it. `live` is the open notes' current blocks, which
  * can be newer than what's saved (saves are debounced).
  * Returns a short message for the toast.
  */
@@ -27,7 +27,7 @@ export async function copyNotes(
   format: CopyFormat,
   notes: NoteMeta[],
   folders: Folder[],
-  live: { id: string; blocks: PartialBlock[] } | null,
+  live: { id: string; blocks: PartialBlock[] }[],
 ): Promise<string> {
   const folderName = (id: string | null) => folders.find((f) => f.id === id)?.name ?? null;
 
@@ -40,8 +40,9 @@ export async function copyNotes(
   for (const id of ids) {
     let blocks: PartialBlock[] | null = null;
     let meta = notes.find((n) => n.id === id);
-    if (live?.id === id) {
-      blocks = live.blocks;
+    const open = live.find((l) => l.id === id);
+    if (open) {
+      blocks = open.blocks;
     } else {
       const loaded = await bridge.load(id);
       if (loaded) {

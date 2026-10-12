@@ -11,13 +11,15 @@ function ago(ts: number): string {
 
 // Quick switcher: type to filter, ↑↓ to move, ↵ to open, ⌘⌫ to delete.
 export function Switcher({
-  currentId,
+  openIds,
+  placeholder,
   folders,
   onPick,
   onDeleted,
   onClose,
 }: {
-  currentId?: string;
+  openIds: string[];
+  placeholder: string;
   folders: Folder[];
   onPick: (id: string) => void;
   onDeleted: (id: string) => void;
@@ -72,7 +74,7 @@ export function Switcher({
       <div className="switcher" onMouseDown={(e) => e.stopPropagation()}>
         <input
           autoFocus
-          placeholder="Search notes…"
+          placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKey}
@@ -90,7 +92,7 @@ export function Switcher({
                 {n.folderId && (
                   <em> · {folders.find((f) => f.id === n.folderId)?.name}</em>
                 )}
-                {n.id === currentId && <em> · open</em>}
+                {openIds.includes(n.id) && <em> · open</em>}
               </span>
               <time>{ago(n.updatedAt)}</time>
             </li>
