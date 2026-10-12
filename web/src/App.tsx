@@ -8,7 +8,7 @@ import { Switcher } from "./Switcher";
 import { Sidebar, useSidebarOpen } from "./Sidebar";
 import { isEmpty, titleOf } from "./notes";
 import { backfillMarkdown, copyNotes, type CopyFormat, type CopyTarget } from "./copy";
-import { closeSide, closedBy, openBeside, openHere, updateNote, type Panes } from "./panes";
+import { clampRatio, closeSide, closedBy, openBeside, openHere, updateNote, type Panes } from "./panes";
 
 const newId = () => crypto.randomUUID();
 
@@ -33,6 +33,27 @@ function loadSplit(): { ids: string[]; active: number } | null {
     return Array.isArray(saved?.ids) && saved.ids.length === 2 ? saved : null;
   } catch {
     return null;
+  }
+}
+
+const RATIO_KEY = "at:splitRatio";
+
+/** How much of the width the left side takes, from 0 to 1. */
+function loadRatio(): number {
+  try {
+    const r = Number(localStorage.getItem(RATIO_KEY));
+    return r > 0 && r < 1 ? r : 0.5;
+  } catch {
+    return 0.5;
+  }
+}
+
+function saveRatio(ratio: number | null) {
+  try {
+    if (ratio === null) localStorage.removeItem(RATIO_KEY);
+    else localStorage.setItem(RATIO_KEY, String(ratio));
+  } catch {
+    /* ignore */
   }
 }
 
@@ -272,6 +293,31 @@ export function App() {
 
   const split = panes.length > 1;
 
+  const [ratio, setRatio] = useState(loadRatio);
+  const [resizing, setResizing] = useState(false);
+  const panesRef = useRef<HTMLDivElement>(null);
+
+  /** Drags the line between the two sides. */
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const box = panesRef.current?.getBoundingClientRect();
+    if (!box) return;
+    let latest = ratio;
+    setResizing(true);
+    const onMove = (ev: MouseEvent) => {
+      latest = clampRatio((ev.clientX - box.left) / box.width, box.width);
+      setRatio(latest);
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      setResizing(false);
+      saveRatio(latest);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
   return (
     <div className="shell">
       <header className="bar">
@@ -316,13 +362,25 @@ export function App() {
             onCopy={copy}
           />
         )}
-        <div className={`panes ${split ? "split" : ""}`}>
+        <div ref={panesRef} className={`panes ${split ? "split" : ""} ${resizing ? "resizing" : ""}`}>
           {panes.map((p, side) => (
             <section
               key={p.id}
               className={`pane ${side === active ? "active" : ""}`}
+              style={split ? { flexGrow: side === 0 ? ratio : 1 - ratio } : undefined}
               onFocus={() => activate(side)}
             >
+              {side === 1 && (
+                <div
+                  className="pane-divider"
+                  title="Drag to resize · double-click to reset"
+                  onMouseDown={startResize}
+                  onDoubleClick={() => {
+                    setRatio(0.5);
+                    saveRatio(null);
+                  }}
+                />
+              )}
               {split && (
                 <div
                   className="pane-head"

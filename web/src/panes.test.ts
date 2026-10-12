@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { closeSide, closedBy, openBeside, openHere, updateNote } from "./panes";
+import { clampRatio, closeSide, closedBy, openBeside, openHere, updateNote } from "./panes";
 
 const n = (id: string) => ({ id });
 const one = { panes: [n("paint")], active: 0 };
@@ -71,5 +71,20 @@ describe("closedBy", () => {
     expect(closedBy(two, openHere(two, n("garden")))).toEqual([n("paint")]);
     expect(closedBy(two, closeSide(two, 1))).toEqual([n("bath")]);
     expect(closedBy(one, openBeside(one, n("bath")))).toEqual([]);
+  });
+});
+
+describe("clampRatio", () => {
+  it("keeps the ratio when both sides are wide enough", () => {
+    expect(clampRatio(0.3, 1000)).toBe(0.3);
+  });
+
+  it("stops each side at the minimum width", () => {
+    expect(clampRatio(0.05, 1000)).toBe(0.3);
+    expect(clampRatio(0.95, 1000)).toBe(0.7);
+  });
+
+  it("splits evenly when there's no room for either side", () => {
+    expect(clampRatio(0.2, 300)).toBe(0.5);
   });
 });

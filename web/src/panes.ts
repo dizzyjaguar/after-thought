@@ -45,3 +45,12 @@ export function updateNote<T extends { id: string }>(
 export function closedBy<T extends { id: string }>(before: Panes<T>, after: Panes<T>): T[] {
   return before.panes.filter((p) => !after.panes.some((n) => n.id === p.id));
 }
+
+/** Narrowest a side of the split can be dragged, in px. */
+export const MIN_PANE_WIDTH = 300;
+
+/** Keeps a dragged split ratio (left side's share, 0 to 1) wide enough on both sides. */
+export function clampRatio(ratio: number, width: number): number {
+  const min = width > 0 ? Math.min(0.5, MIN_PANE_WIDTH / width) : 0.5;
+  return Math.min(1 - min, Math.max(min, ratio));
+}
