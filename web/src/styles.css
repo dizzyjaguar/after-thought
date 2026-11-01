@@ -331,6 +331,17 @@ kbd {
   pointer-events: none;
 }
 
+/* The slash menu's picked item. BlockNote's own highlight is a near-black fill
+   that disappears on the glass, so arrow keys looked like they did nothing.
+   Same look as the switcher's picked row. */
+.bn-mantine .bn-suggestion-menu .bn-suggestion-menu-item[aria-selected="true"],
+.bn-mantine .bn-suggestion-menu .bn-suggestion-menu-item:hover,
+.bn-mantine .bn-grid-suggestion-menu .bn-grid-suggestion-menu-item[aria-selected="true"],
+.bn-mantine .bn-grid-suggestion-menu .bn-grid-suggestion-menu-item:hover {
+  background-color: var(--hover);
+  box-shadow: inset 0 0.5px 0 var(--shine);
+}
+
 .switcher footer {
   padding: 8px 12px;
   border-top: 1px solid var(--line);
