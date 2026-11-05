@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The update list the Mac app checks. scripts/release.sh adds each release here. -->
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>after-thought</title>
+    <link>https://after-thought.dev/appcast.xml</link>
+    <language>en</language>
+  </channel>
+</rss>

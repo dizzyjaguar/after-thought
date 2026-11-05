@@ -1,8 +1,9 @@
 import AppKit
 import Carbon
 import ServiceManagement
+import Sparkle
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, SPUStandardUserDriverDelegate {
     private let store = NoteStore()
     private lazy var mirror = MarkdownMirror(store: store)
     private var mirrorToggle: NSMenuItem!
@@ -12,6 +13,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var editor: EditorWebView!
     private var panel: Panel!
     private var statusItem: NSStatusItem!
+    /// Checks after-thought.dev once a day and offers to install new versions.
+    private lazy var updater = SPUStandardUpdaterController(
+        startingUpdater: true, updaterDelegate: nil, userDriverDelegate: self)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         editor = EditorWebView(store: store)
@@ -24,6 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         hotKeys.register(keyCode: kVK_ANSI_N, modifiers: controlKey | optionKey) { [weak self] in self?.show("new") }
 
         setUpStatusItem()
+        _ = updater
         EditorWebView.cleanUpCopiedFiles()
 
         store.onChange = { [weak self] in self?.mirror.scheduleSync() }
@@ -77,6 +82,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         menu.addItem(login)
         menu.addItem(.separator())
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+        let about = NSMenuItem(title: "Version \(version)", action: nil, keyEquivalent: "")
+        about.isEnabled = false
+        menu.addItem(about)
+        menu.addItem(item("Check for Updates…", nil, #selector(checkForUpdates)))
+        menu.addItem(item("Uninstall after-thought…", nil, #selector(uninstall)))
+        menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit after-thought", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         menu.delegate = self
         menu.autoenablesItems = false
@@ -96,6 +108,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         item.target = self
         if let hint { item.toolTip = hint; item.title = "\(title)    \(hint)" }
         return item
+    }
+
+    @objc private func checkForUpdates() {
+        NSApp.activate(ignoringOtherApps: true)
+        updater.checkForUpdates(nil)
+    }
+
+    /// Moves the app and its settings to the Trash, and the notes too if you say so.
+    /// Everything goes to the Trash, so a mistake can be put back. A Markdown copy
+    /// folder you picked yourself is left alone.
+    @objc private func uninstall() {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "Uninstall after-thought?"
+        alert.informativeText = "The app and its settings go to the Trash. "
+            + "You can keep your notes, so they're still here if you install it again."
+        alert.addButton(withTitle: "Uninstall, Keep Notes")
+        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: "Uninstall and Delete Notes").hasDestructiveAction = true
+        let answer = alert.runModal()
+        guard answer != .alertSecondButtonReturn else { return }
+
+        try? SMAppService.mainApp.unregister()
+        let fm = FileManager.default
+        let library = fm.urls(for: .libraryDirectory, in: .userDomainMask)[0]
+        let id = Bundle.main.bundleIdentifier ?? "dev.dizzyjaguar.after-thought"
+        var trash = [
+            Bundle.main.bundleURL,
+            library.appendingPathComponent("Caches/\(id)"),
+            library.appendingPathComponent("WebKit/\(id)"),
+            library.appendingPathComponent("HTTPStorages/\(id)"),
+            library.appendingPathComponent("Saved Application State/\(id).savedState"),
+            fm.temporaryDirectory.appendingPathComponent("after-thought-clipboard"),
+        ]
+        if answer == .alertThirdButtonReturn { trash.append(store.root) }
+        for url in trash where fm.fileExists(atPath: url.path) {
+            do { try fm.trashItem(at: url, resultingItemURL: nil) }
+            catch { NSLog("after-thought: couldn't trash \(url.path): \(error)") }
+        }
+        UserDefaults.standard.removePersistentDomain(forName: id)
+        NSApp.terminate(nil)
+    }
+
+    // A menu bar app has no Dock icon, so bring the update popup to the front
+    // when a daily check finds something, or it can open behind other windows.
+    var supportsGentleScheduledUpdateReminders: Bool { true }
+
+    func standardUserDriverWillHandleShowingUpdate(
+        _ handleShowingUpdate: Bool, forUpdate update: SUAppcastItem, state: SPUUserUpdateState
+    ) {
+        if handleShowingUpdate { NSApp.activate(ignoringOtherApps: true) }
     }
 
     @objc private func menuLast() { show("last") }

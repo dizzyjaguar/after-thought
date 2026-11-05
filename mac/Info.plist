@@ -24,5 +24,13 @@
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <!-- Sparkle: where to look for updates, and the key releases are signed with
+         (the private half is in the release machine's Keychain). -->
+    <key>SUFeedURL</key>
+    <string>https://after-thought.dev/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>oOzLGADL5nefz5triKo4EEZqp9dYQFCXicuxzGZqgP4=</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
 </dict>
 </plist>

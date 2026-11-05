@@ -4,6 +4,8 @@ import { CallScene } from "./CallScene";
 import { useFadeDemo, useReveal, type FadePhase } from "./motion";
 
 const REPO = "https://github.com/dizzyjaguar/after-thought";
+// Always the newest release (scripts/release.sh uploads after-thought.zip each time).
+const DOWNLOAD = `${REPO}/releases/latest/download/after-thought.zip`;
 
 const LEVELS: { phase: FadePhase; pct: string; label: string }[] = [
   { phase: "focus", pct: "100%", label: "Typing in your note" },
@@ -48,11 +50,11 @@ export function App() {
             last note is there, ready to type.
           </p>
           <div className="actions">
-            <a className="button primary" href={REPO}>
-              View on GitHub
+            <a className="button primary" href={DOWNLOAD}>
+              Download for Mac
             </a>
-            <a className="button ghost" href="#beta">
-              Try the beta
+            <a className="button ghost" href={REPO}>
+              View on GitHub
             </a>
           </div>
           <p className="meta">Beta · Free and open source · MIT license · macOS 26</p>
@@ -164,12 +166,13 @@ export function App() {
           </span>
           <h2>Help shape After Thought</h2>
           <p className="body">
-            It’s early, and there’s no download yet. Build it from source to try it on macOS 26, tell us
-            what breaks, or send a pull request.
+            It’s early, so tell us what breaks. Unzip it and drag After Thought to Applications. The
+            first time you open it, macOS will say it can’t check the app: open System Settings →
+            Privacy &amp; Security and click Open Anyway. After that, it updates itself.
           </p>
           <div className="actions">
-            <a className="button primary" href={`${REPO}#install`}>
-              Try the beta
+            <a className="button primary" href={DOWNLOAD}>
+              Download the beta
             </a>
             <a className="button ghost" href={`${REPO}/issues`}>
               Report a bug
