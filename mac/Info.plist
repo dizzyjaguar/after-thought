@@ -2,35 +2,33 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key>
-    <string>after-thought</string>
-    <key>CFBundleDisplayName</key>
-    <string>after-thought</string>
-    <key>CFBundleIdentifier</key>
-    <string>dev.dizzyjaguar.after-thought</string>
-    <key>CFBundleExecutable</key>
-    <string>AfterThought</string>
-    <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <!-- Sparkle: where to look for updates, and the key releases are signed with
-         (the private half is in the release machine's Keychain). -->
-    <key>SUFeedURL</key>
-    <string>https://after-thought.dev/appcast.xml</string>
-    <key>SUPublicEDKey</key>
-    <string>oOzLGADL5nefz5triKo4EEZqp9dYQFCXicuxzGZqgP4=</string>
-    <key>SUEnableAutomaticChecks</key>
-    <true/>
+	<key>CFBundleDisplayName</key>
+	<string>after-thought</string>
+	<key>CFBundleExecutable</key>
+	<string>AfterThought</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>dev.dizzyjaguar.after-thought</string>
+	<key>CFBundleName</key>
+	<string>after-thought</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>2</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://after-thought.dev/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>oOzLGADL5nefz5triKo4EEZqp9dYQFCXicuxzGZqgP4=</string>
 </dict>
 </plist>
