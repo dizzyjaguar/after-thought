@@ -464,6 +464,14 @@ export function App() {
   );
 }
 
+// WebKit bakes the page's text color into copied HTML, and ours is white in dark
+// mode, so notes pasted into an email had invisible words. Pin it to black instead.
+// Runs after BlockNote has filled the clipboard.
+function pinCopiedColor(e: React.ClipboardEvent) {
+  const html = e.clipboardData.getData("text/html");
+  if (html) e.clipboardData.setData("text/html", `<div style="color: #000">${html}</div>`);
+}
+
 function Editor({
   note,
   active,
@@ -511,7 +519,7 @@ function Editor({
   useEffect(() => () => pending.current?.(), []);
 
   return (
-    <div className="editor-wrap">
+    <div className="editor-wrap" onCopy={pinCopiedColor} onCut={pinCopiedColor}>
       <BlockNoteView
         editor={editor}
         formattingToolbar={false}
